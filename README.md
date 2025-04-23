@@ -25,10 +25,9 @@ Import the `E164` class, create an instance, and use the `lookup` method.
 ```javascript
 const E164 = require('e164-node');
 
-// Create an instance (API key optional for public lookups)
+// Create an instance
 const e164 = new E164();
-// If you have an API key for authenticated endpoints (future):
-// const e164 = new E164({ apiKey: 'YOUR_API_KEY' });
+// API Key option removed as it's not needed
 
 async function lookupNumber(phoneNumber) {
   try {

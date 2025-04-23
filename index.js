@@ -5,7 +5,7 @@
  * @typicalname e164
  * @example
  * const E164 = require('e164-node');
- * const e164 = new E164(); // No API key needed for public lookup
+ * const e164 = new E164(); // Create an instance
  *
  * async function run() {
  *   try {
@@ -32,10 +32,9 @@ class E164 {
    * Creates an instance of the E164 SDK.
    * @param {object} [options={}] - Configuration options.
    * @param {object} [options.client] - An optional pre-configured axios instance.
-   * @param {string} [options.apiKey] - Your E164 API key (optional for public lookups).
    */
   constructor(options = {}) {
-    this.apiKey = options.apiKey; // Store API key if provided (might be needed for future authenticated endpoints)
+    // API Key removed as it's not needed for the public API
 
     if (options.client) {
         this.client = options.client;
@@ -43,10 +42,7 @@ class E164 {
         this.client = axios.create({
             baseURL: BASE_URL,
             headers: {
-                'User-Agent': 'e164-node-sdk/1.0 (Node.js)', // Updated User-Agent
-                'Referer': 'https://www.e164.com/', // Referer as in Python example
-                // Add Authorization header if apiKey exists
-                ...(this.apiKey && { 'Authorization': `Bearer ${this.apiKey}` })
+                'Referer': 'https://www.e164.com/', 
             }
         });
     }
@@ -90,7 +86,6 @@ class E164 {
           return new Response(404, null, 'Phone number not found or invalid.', rawResponse);
       }
 
-      // If data is an array, take the first element (as in Python example)
       if (Array.isArray(data) && data.length > 0) {
         data = data[0];
       }
