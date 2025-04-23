@@ -1,0 +1,19 @@
+{
+  "name": "e164-node",
+  "version": "1.0.0",
+  "description": "E164 Node SDK is a node package for interacting with the [e164.com](https://e164.com) API.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/e164-com/e164-node-sdk.git"
+  },
+  "author": "E164.com",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/e164-com/e164-node-sdk/issues"
+  },
+  "homepage": "https://github.com/e164-com/e164-node-sdk#readme"
+}
