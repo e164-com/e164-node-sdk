@@ -4,7 +4,7 @@
   "description": "E164 Node SDK is a node package for interacting with the [e164.com](https://e164.com) API.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest"
   },
   "repository": {
     "type": "git",
@@ -15,5 +15,9 @@
   "bugs": {
     "url": "https://github.com/e164-com/e164-node-sdk/issues"
   },
-  "homepage": "https://github.com/e164-com/e164-node-sdk#readme"
+  "homepage": "https://github.com/e164-com/e164-node-sdk#readme",
+  "devDependencies": {
+    "axios": "^1.8.4",
+    "jest": "^29.7.0"
+  }
 }
