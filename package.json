@@ -1,6 +1,6 @@
 {
   "name": "e164-node",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "E164 Node SDK is a node package for interacting with the [e164.com](https://e164.com) API.",
   "main": "index.js",
   "types": "index.d.ts",
