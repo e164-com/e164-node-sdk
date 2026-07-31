@@ -91,7 +91,7 @@ const response = await e164.lookup('+441133910781', {
 | Option    | Type          | Description |
 | --------- | ------------- | ----------- |
 | `timeout` | `number`      | Timeout for this request only. |
-| `signal`  | `AbortSignal` | Cancels this request. A cancelled lookup resolves with status `499`. |
+| `signal`  | `AbortSignal` | Cancels this request. A cancelled lookup resolves with status `499` — except for `AbortSignal.timeout()`, whose deadline is reported as `504` like any other timeout. |
 
 ## Response object
 
@@ -101,9 +101,14 @@ const response = await e164.lookup('+441133910781', {
 | `error`       | `string \| null`    | Error message, or `null` on success. |
 | `data`        | `object \| null`    | The best-matching record, or `null` on failure. |
 | `results`     | `object[]`          | Every record returned, most specific first. Empty on failure. |
-| `rawResponse` | `object \| null`    | The underlying HTTP response, for headers and other low-level details. |
+| `rawResponse` | `object \| null`    | The underlying HTTP response, for headers, status and other low-level details. |
 | `isSuccess()` | `() => boolean`     | `true` when `statusCode` is 2xx. |
 | `toJSON()`    | `() => object`      | A JSON-safe view, omitting `rawResponse`. |
+
+> **`rawResponse` has an already-consumed body.** `lookup()` reads the body itself in
+> order to parse it, so on the default `fetch` transport `rawResponse.text()` and
+> `rawResponse.json()` throw `Body is unusable`. Read `rawResponse.headers` and
+> `rawResponse.status` freely; use `response.data` or `response.results` for the body.
 
 On success, the fields of the best-matching record are also copied onto the response itself:
 
@@ -132,12 +137,64 @@ On success, the fields of the best-matching record are also copied onto the resp
 | `200`  | Match found. |
 | `400`  | Input rejected locally; no request was made. |
 | `404`  | The API has no record for this number. |
+| `429`  | Rate limited by the API. See [Rate limits](#rate-limits). |
 | `499`  | The request was cancelled via an `AbortSignal`. |
 | `500`  | Network or unexpected error. |
 | `502`  | The API replied with something unusable — a redirect, or a body that is not JSON. |
 | `504`  | The request timed out. |
 
 Any other status is passed through from the API as-is.
+
+## Rate limits
+
+The API is rate-limited by a token bucket, and **parallelism is what empties it.**
+A burst of concurrent lookups will see most of them rejected with `429`:
+
+```javascript
+// Don't do this. Roughly two thirds of these come back 429.
+const results = await Promise.all(numbers.map((n) => e164.lookup(n)));
+```
+
+Two things make this harder to handle than a typical rate limit:
+
+- **The `429` carries no `Retry-After` header**, so there is nothing to schedule against.
+- **Once the bucket is empty it stays empty for tens of seconds.** Millisecond-scale
+  backoff does not clear it — in testing, even one-at-a-time lookups spaced 250ms apart
+  kept failing until the client had been idle for roughly a minute.
+
+The SDK does not retry, so batching is the caller's responsibility. Go **sequential**,
+and back off in **seconds** rather than milliseconds:
+
+```javascript
+async function lookupAll(e164, numbers) {
+  const results = [];
+
+  for (const number of numbers) {
+    results.push(await lookupWithRetry(e164, number));
+  }
+
+  return results;
+}
+
+async function lookupWithRetry(e164, number, attempts = 5) {
+  for (let attempt = 0; ; attempt++) {
+    const response = await e164.lookup(number);
+
+    if (response.statusCode !== 429 || attempt >= attempts - 1) return response;
+
+    // Seconds, not milliseconds: 1s, 2s, 4s, 8s.
+    await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** attempt));
+  }
+}
+```
+
+That resolves 30 numbers without a single failure, in about 40 seconds. Adding
+concurrency to it makes it slower, not faster, because every parallel request spends
+the budget the retries are waiting to recover.
+
+From a rested start, sequential lookups at up to ~5/second were not limited at all —
+so a steady trickle needs no retry logic. It is bursts, and anything recovering from
+one, that need the backoff above.
 
 ## TypeScript
 

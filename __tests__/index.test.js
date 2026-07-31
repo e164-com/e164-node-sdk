@@ -338,6 +338,40 @@ describe('E164 SDK', () => {
             expect(result.error).toBe('Request timed out after 10ms.');
         });
 
+        // `AbortSignal.timeout()` is the pattern the README documents for a
+        // per-request deadline, so it must report 504 rather than 499 — aborting
+        // the SDK's own controller would otherwise discard the signal's reason.
+        it('reports an AbortSignal.timeout() deadline as a timeout, not a cancellation', async () => {
+            const fetchMock = jest.fn((url, { signal }) => new Promise((resolve, reject) => {
+                signal.addEventListener('abort', () => {
+                    reject(Object.assign(new Error('This operation was aborted'), { name: 'AbortError' }));
+                });
+            }));
+
+            const result = await new E164({ fetch: fetchMock, timeout: 0 })
+                .lookup('+441133910781', { signal: AbortSignal.timeout(10) });
+
+            expect(result.isSuccess()).toBe(false);
+            expect(result.statusCode).toBe(504);
+        });
+
+        it('still reports a custom abort reason as a cancellation', async () => {
+            const controller = new AbortController();
+            const fetchMock = jest.fn((url, { signal }) => new Promise((resolve, reject) => {
+                signal.addEventListener('abort', () => {
+                    reject(Object.assign(new Error('aborted'), { name: 'AbortError' }));
+                });
+            }));
+
+            const pending = new E164({ fetch: fetchMock, timeout: 0 })
+                .lookup('+441133910781', { signal: controller.signal });
+            controller.abort('user navigated away');
+            const result = await pending;
+
+            expect(result.statusCode).toBe(499);
+            expect(result.error).toBe('Request was cancelled.');
+        });
+
         it('reports cancellation raised by an axios-style client', async () => {
             const client = {
                 get: jest.fn().mockRejectedValue(

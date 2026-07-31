@@ -1,6 +1,6 @@
 {
   "name": "e164-node",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Zero-dependency Node.js SDK for the e164.com phone number lookup API.",
   "keywords": [
     "e164",

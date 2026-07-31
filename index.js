@@ -136,7 +136,8 @@ class E164 {
    *   formatting (`'+44 113 391 0781'`, `'441133910781'`, …).
    * @param {object} [options={}] - Per-call overrides.
    * @param {number} [options.timeout] - Timeout for this request only.
-   * @param {AbortSignal} [options.signal] - Signal used to cancel this request.
+   * @param {AbortSignal} [options.signal] - Signal used to cancel this request. Reported
+   *   as `499`, except for `AbortSignal.timeout()`, whose deadline is reported as `504`.
    * @returns {Promise<Response>} A promise that resolves with a Response object.
    */
   async lookup(phoneNumber, options = {}) {
@@ -238,6 +239,14 @@ class E164 {
     } catch (error) {
       if (timedOut) {
         const timeoutError = new Error(`Request timed out after ${timeout}ms.`);
+        timeoutError.code = 'ETIMEDOUT';
+        throw timeoutError;
+      }
+      // Aborting our own controller discards the caller signal's reason, so ask the
+      // signal directly: `AbortSignal.timeout()` is a timeout, not a cancellation,
+      // and the two are reported with different status codes.
+      if (signal && signal.aborted && signal.reason && signal.reason.name === 'TimeoutError') {
+        const timeoutError = new Error(signal.reason.message || 'The operation was aborted due to timeout.');
         timeoutError.code = 'ETIMEDOUT';
         throw timeoutError;
       }

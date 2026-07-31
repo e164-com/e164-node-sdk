@@ -3,6 +3,24 @@
 All notable changes to this project are documented in this file. This project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.0.1
+
+### Fixed
+
+- **`AbortSignal.timeout()` was reported as a cancellation (`499`) rather than a
+  timeout (`504`).** Aborting the SDK's internal controller discarded the caller
+  signal's reason, so a deadline was indistinguishable from a manual `abort()` —
+  including for the `signal: AbortSignal.timeout(2000)` pattern the README documents.
+  A custom abort reason still reports `499`.
+
+### Documentation
+
+- Documented the API's rate limiting: it is a token bucket emptied by concurrency,
+  the `429` carries no `Retry-After`, and recovery takes tens of seconds. Added a
+  sequential batching recipe with second-scale backoff.
+- Documented that `response.rawResponse` has an already-consumed body, so `text()`
+  and `json()` throw on the `fetch` transport while `headers` and `status` work.
+
 ## 2.0.0
 
 ### Fixed

@@ -68,6 +68,10 @@ declare class Response {
     /**
      * The original raw response object from the HTTP client — a `fetch` `Response`
      * by default, or your client's response when one is injected.
+     *
+     * Its body has already been consumed in order to parse it, so on the `fetch`
+     * transport `text()` and `json()` throw `Body is unusable`. Read `headers` and
+     * `status` from here; read the body from `data` or `results`.
      */
     rawResponse: unknown;
     /** The best-matching record, or `null` when the lookup failed. */

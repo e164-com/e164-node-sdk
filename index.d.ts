@@ -26,7 +26,10 @@ interface E164Options {
 interface E164LookupOptions {
     /** Timeout for this request only, in milliseconds. */
     timeout?: number;
-    /** Signal used to cancel this request. */
+    /**
+     * Signal used to cancel this request. A cancelled lookup resolves with status
+     * `499`, except for `AbortSignal.timeout()`, whose deadline resolves with `504`.
+     */
     signal?: AbortSignal;
 }
 
